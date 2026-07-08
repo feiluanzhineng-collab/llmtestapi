@@ -12,6 +12,18 @@
 
 ---
 
+## 📸 Screenshots
+
+**Overview** — configure Base URL, API Key, and model once; all modules share the same settings.
+
+![Overview — API configuration](docs/screenshots/dashboard.png)
+
+**TTFT performance** — RPM/TPM, input tiers, streaming vs non-streaming, live P50/P90.
+
+![TTFT performance test](docs/screenshots/ttft.png)
+
+---
+
 ## ✨ What is this project?
 
 **LLM API Test** is a single-page app that helps you **verify a model API end-to-end** — compatibility, engineering behavior, latency, throughput, and benchmark accuracy — without installing Python harnesses or Docker.

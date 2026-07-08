@@ -12,6 +12,18 @@
 
 ---
 
+## 📸 界面截图
+
+**总览** — 一次配置 Base URL、API Key、模型，全站测试模块共用。
+
+![总览 — API 配置](docs/screenshots/dashboard.png)
+
+**TTFT 性能** — RPM/TPM、输入分档、流式/非流式、实时 P50/P90 汇总。
+
+![TTFT 性能测试](docs/screenshots/ttft.png)
+
+---
+
 ## ✨ 这个项目是干嘛的？
 
 **LLM API Test** 帮你在浏览器里 **一次性验 API**：兼容性、工程性、性能、精度，不用装 Python 评测框架，也不用 Docker。
