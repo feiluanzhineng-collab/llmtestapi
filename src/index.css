@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+body {
+  @apply m-0 min-h-screen bg-surface text-slate-800 antialiased;
+}
+
+#root {
+  @apply min-h-screen;
+}
+
+input,
+select,
+textarea,
+button {
+  font: inherit;
+}
