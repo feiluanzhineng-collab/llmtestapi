@@ -7,16 +7,16 @@ export interface AppConfig {
 }
 
 export const DEFAULT_CONFIG: AppConfig = {
-  baseUrl: 'https://api.openai.com/v1',
+  baseUrl: 'https://ai.feiluanai.com/v1',
   apiKey: '',
   model: '',
-  useProxy: false,
+  useProxy: typeof window !== 'undefined' && window.location.hostname === 'llmtest.feiluanai.com',
   timeoutMs: 120_000,
 }
 
 export function resolveBaseUrl(config: AppConfig): string {
   if (config.useProxy) {
-    return '/api/v1'
+    return '/api'
   }
   return config.baseUrl.replace(/\/$/, '')
 }

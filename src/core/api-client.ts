@@ -1,6 +1,8 @@
 import { resolveBaseUrl, type AppConfig } from '../types/config'
+import { formatProxyError } from './base-url'
 import { chatRequest } from './chat-request'
 import { calcOtps } from './metrics'
+import { proxyRequestHeaders } from './proxy-headers'
 import { parseChunkJson, parseSseStream } from './sse-parser'
 
 export interface StreamChatOptions {
@@ -41,6 +43,7 @@ export async function streamChatCompletion(
         Authorization: `Bearer ${config.apiKey}`,
         'Content-Type': 'application/json',
         Accept: 'text/event-stream',
+        ...proxyRequestHeaders(config),
       },
       body: JSON.stringify({ stream: true, stream_options: { include_usage: true }, ...body }),
       signal,
@@ -56,7 +59,7 @@ export async function streamChatCompletion(
         completionTokens: null,
         otps: null,
         httpStatus: response.status,
-        error: text.slice(0, 300) || response.statusText,
+        error: formatProxyError(response.status, text),
         contentReceived: false,
       }
     }

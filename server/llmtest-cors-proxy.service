@@ -1,0 +1,14 @@
+[Unit]
+Description=LLM API Test CORS relay
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/llmtestapi
+ExecStart=/usr/bin/python3 /opt/llmtestapi/cors-proxy.py
+Restart=on-failure
+RestartSec=3
+Environment=LLM_PROXY_PORT=8787
+
+[Install]
+WantedBy=multi-user.target

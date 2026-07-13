@@ -5,6 +5,7 @@ export type SuiteId =
   | 'performance'
   | 'otps'
   | 'accuracy'
+  | 'about'
 
 export interface SuiteMeta {
   id: SuiteId

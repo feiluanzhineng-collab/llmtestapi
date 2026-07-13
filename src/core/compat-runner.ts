@@ -1,6 +1,7 @@
 import { chatRequest } from './chat-request'
 import { evaluateStep, evaluateSeedStability } from './compat-eval'
 import { buildLongInput, getCompatibilityCases } from '../suites/compatibility-cases'
+import { randomUUID } from './random-id'
 import type { AppConfig } from '../types/config'
 import type {
   CompatCaseDef,
@@ -172,7 +173,7 @@ export async function runCompatibilitySuite(options: CompatRunOptions): Promise<
   }
 
   const report: CompatRunReport = {
-    id: crypto.randomUUID(),
+    id: randomUUID(),
     startedAt,
     finishedAt: new Date().toISOString(),
     model,

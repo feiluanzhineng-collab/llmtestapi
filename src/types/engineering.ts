@@ -11,10 +11,13 @@ export interface EngExpect {
   minToolCalls?: number
   hasReasoning?: boolean
   jsonSchemaKeys?: string[]
+  /** 全部命中（AND） */
   contentIncludes?: string[]
+  /** 至少命中其一（OR），用于多语言等同义断言 */
+  contentIncludesAny?: string[]
 }
 
-export type EngStepHandler = 'eos-batch' | 'cache-compare' | 'json-repeat'
+export type EngStepHandler = 'eos-batch' | 'cache-compare' | 'json-repeat' | 'majority-repeat'
 
 export interface EngStepDef {
   id: string
@@ -26,7 +29,13 @@ export interface EngStepDef {
   skip?: boolean
   skipReason?: string
   handler?: EngStepHandler
-  handlerOptions?: { runs?: number; repeatCount?: number }
+  handlerOptions?: {
+    runs?: number
+    repeatCount?: number
+    minPassRate?: number
+    /** majority-repeat：至少几次 evaluateEngStep 通过 */
+    minPassCount?: number
+  }
 }
 
 export interface EngCaseDef {

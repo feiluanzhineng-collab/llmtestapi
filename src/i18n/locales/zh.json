@@ -10,18 +10,22 @@
     "performance": "性能测试 (TTFT)",
     "otps": "OTPS 吞吐",
     "accuracy": "精度验收",
+    "about": "关于我们",
+    "github": "GitHub 开源",
     "comingSoon": "即将推出"
   },
   "config": {
     "title": "API 配置",
     "baseUrl": "接口地址 (Base URL)",
-    "baseUrlHint": "例如 https://api.example.com/v1 或开发环境 /api/v1",
+    "baseUrlHint": "填写第三方中转站完整地址，例如 https://your-gateway.com/v1",
     "apiKey": "API Key",
-    "apiKeyHint": "仅保存在浏览器本地，不会上传",
+    "apiKeyHint": "仅保存在浏览器本地，经同源代理转发时也不会落盘",
     "model": "模型 (Model)",
     "modelHint": "chat/completions 使用的模型 ID",
-    "useProxy": "使用开发代理路径",
-    "useProxyHint": "开发时通过 /api 前缀绕过 CORS",
+    "useProxy": "经同源代理转发（推荐）",
+    "useProxyHint": "勾选后请求走本站 /api，由服务器按上方 Base URL 动态转发，支持任意 HTTPS 中转站，避免跨域",
+    "corsHostedWarning": "未勾选代理时，浏览器会因跨域 (CORS) 拦截请求。测试第三方中转站请保持勾选「经同源代理转发」。",
+    "corsDevWarning": "未勾选代理时，浏览器可能因跨域拦截。本地开发请勾选代理，或确保目标 API 已开启 CORS。",
     "save": "保存配置",
     "saved": "配置已保存",
     "testConnection": "测试连通性",
@@ -85,7 +89,7 @@
     "settings": "测试设置",
     "includeOptional": "包含可选项（Interleaved thinking、频控 burst 等）",
     "eosRuns": "EOS 压测次数",
-    "eosRunsHint": "（文档标准 1000，默认 10；以本页输入为准）",
+    "eosRunsHint": "（文档标准 1000，默认 100；以本页输入为准）",
     "caseCount": "将运行 {{count}} 个验收项",
     "runAll": "运行工程验收",
     "results": "测试结果",
@@ -327,6 +331,27 @@
         "desc": "τ³-Bench：模拟航空/零售/电信等客服场景，多轮对话 + 工具调用 + 策略遵循。",
         "why": "官方总分约 70.6%。需专用模拟器（tau2-bench），不是单纯题库文件。"
       }
+    }
+  },
+  "about": {
+    "title": "关于我们",
+    "projectTitle": "开源项目",
+    "projectBody": "LLM API Test 是飞鸾数字科技开源的纯前端 API 验收测试台，帮助你在浏览器中完成兼容性、工程性、性能与精度等全方位验收，无需安装 Python 评测环境或 Docker。",
+    "viewOnGitHub": "在 GitHub 上查看源码 →",
+    "companyTitle": "公司简介",
+    "companyIntro": "杭州飞鸾数字科技有限公司专注 B2B AI 基础设施。我们提供企业级 LLM 网关与中继服务——将你的应用 Base URL 切换至飞鸾，即可接入前沿模型，享受高 TPM/RPM 容量与稳定 SLA。",
+    "highlightTpm": "超大 TPM / RPM 容量，100M+ TPM 可谈；直连机房，路由 DeepSeek、GLM、Kimi、Seedance 等主流模型",
+    "highlightSla": "企业级 SLA，延迟与可用性可写入合同",
+    "highlightCompat": "OpenAI 兼容 API，多数 SDK 仅需更换 Base URL",
+    "highlightB2b": "B2B 企业对接：容量规划、计费与专属支持",
+    "contactTitle": "联系我们",
+    "phone": "电话",
+    "email": "邮箱",
+    "contactHint": "如需 B2B 接入、容量规划或 SLA 洽谈，欢迎直接来电或发邮件。",
+    "products": {
+      "gatewayCn": "API 网关（国内）",
+      "gatewayIntl": "API 网关（国际）",
+      "image": "AI 生图平台"
     }
   }
 }

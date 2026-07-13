@@ -6,6 +6,7 @@ import { CompatibilityPage } from './pages/Compatibility'
 import { EngineeringPage } from './pages/Engineering'
 import { PerformanceOTPSPage } from './pages/PerformanceOTPS'
 import { AccuracyPage } from './pages/Accuracy'
+import { AboutPage } from './pages/About'
 import type { SuiteId } from './types'
 
 function renderPage(active: SuiteId) {
@@ -22,6 +23,8 @@ function renderPage(active: SuiteId) {
       return <PerformanceOTPSPage />
     case 'accuracy':
       return <AccuracyPage />
+    case 'about':
+      return <AboutPage />
     default:
       return <DashboardPage />
   }

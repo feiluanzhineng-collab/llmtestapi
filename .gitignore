@@ -3,4 +3,5 @@ dist
 dist-ssr
 *.local
 .env
+.env.deploy
 .DS_Store

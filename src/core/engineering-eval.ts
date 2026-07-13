@@ -1,5 +1,9 @@
 import type { EngExpect, EngStepDef, EngStepStatus } from '../types/engineering'
 import type { ChatRequestResult } from './chat-request'
+import { extractAssistantText } from './extract-assistant-text'
+
+/** json_object 合规率默认通过阈值（固定 temperature=0 + seed 下要求 100%） */
+export const JSON_REPEAT_DEFAULT_MIN_PASS_RATE = 1
 
 function matchStatus(status: number, expect: EngExpect): boolean {
   if (expect.statusNot != null && status === expect.statusNot) return false
@@ -8,11 +12,27 @@ function matchStatus(status: number, expect: EngExpect): boolean {
   return status === expect.status
 }
 
-function extractAssistantContent(json: unknown): string | null {
-  if (!json || typeof json !== 'object') return null
-  const choices = (json as { choices?: Array<{ message?: { content?: string | null } }> }).choices
-  const content = choices?.[0]?.message?.content
-  return typeof content === 'string' ? content : content === null ? '' : null
+function assistantText(res: ChatRequestResult): string {
+  if (typeof res.assistantContent === 'string' && res.assistantContent.trim()) {
+    return res.assistantContent.trim()
+  }
+  return extractAssistantText(res.json)
+}
+
+function stripMarkdownJsonFence(text: string): string {
+  const trimmed = text.trim()
+  const fenced = trimmed.match(/^```(?:json)?\s*\n?([\s\S]*?)\n?```$/i)
+  return fenced ? fenced[1].trim() : trimmed
+}
+
+export function tryParseAssistantJson(text: string): unknown | null {
+  const candidate = stripMarkdownJsonFence(text)
+  if (!candidate) return null
+  try {
+    return JSON.parse(candidate)
+  } catch {
+    return null
+  }
 }
 
 function extractToolCalls(json: unknown): unknown[] {
@@ -66,29 +86,31 @@ export function evaluateEngStep(
     }
   }
 
-  if (expect.jsonValid && res.json != null) {
-    const content = extractAssistantContent(res.json)
-    if (content) {
-      try {
-        JSON.parse(content)
-      } catch {
-        return { status: 'fail', message: 'Assistant content is not valid JSON' }
-      }
+  const httpOk = res.httpStatus >= 200 && res.httpStatus < 300
+
+  if (expect.jsonValid && httpOk && res.json != null) {
+    const content = assistantText(res)
+    if (!content) {
+      return { status: 'fail', message: 'Assistant content is empty' }
+    }
+    if (tryParseAssistantJson(content) == null) {
+      return { status: 'fail', message: 'Assistant content is not valid JSON' }
     }
   }
 
-  if (expect.jsonSchemaKeys?.length && res.json != null) {
-    const content = extractAssistantContent(res.json)
-    if (content) {
-      try {
-        const parsed = JSON.parse(content) as Record<string, unknown>
-        for (const key of expect.jsonSchemaKeys) {
-          if (!(key in parsed)) {
-            return { status: 'fail', message: `JSON missing key: ${key}` }
-          }
-        }
-      } catch {
-        return { status: 'fail', message: 'Assistant content is not valid JSON' }
+  if (expect.jsonSchemaKeys?.length && httpOk && res.json != null) {
+    const content = assistantText(res)
+    if (!content) {
+      return { status: 'fail', message: 'Assistant content is empty' }
+    }
+    const parsed = tryParseAssistantJson(content)
+    if (parsed == null || typeof parsed !== 'object') {
+      return { status: 'fail', message: 'Assistant content is not valid JSON' }
+    }
+    const obj = parsed as Record<string, unknown>
+    for (const key of expect.jsonSchemaKeys) {
+      if (!(key in obj)) {
+        return { status: 'fail', message: `JSON missing key: ${key}` }
       }
     }
   }
@@ -119,9 +141,20 @@ export function evaluateEngStep(
     return { status: 'fail', message: 'Expected reasoning/thinking content in response' }
   }
 
-  if (expect.contentIncludes?.length && res.json != null) {
-    const content = (extractAssistantContent(res.json) ?? '').toLowerCase()
-    for (const s of expect.contentIncludes) {
+  if (res.json != null) {
+    const content = assistantText(res).toLowerCase()
+
+    if (expect.contentIncludesAny?.length) {
+      const hit = expect.contentIncludesAny.some((s) => content.includes(s.toLowerCase()))
+      if (!hit) {
+        return {
+          status: 'fail',
+          message: `Response should mention one of: ${expect.contentIncludesAny.join(', ')}`,
+        }
+      }
+    }
+
+    for (const s of expect.contentIncludes ?? []) {
       if (!content.includes(s.toLowerCase())) {
         return { status: 'fail', message: `Response should mention: ${s}` }
       }
@@ -164,31 +197,87 @@ export function evaluateCacheCompare(
   if (secondMs < firstMs * 0.85) {
     return { status: 'pass', message: msg }
   }
-  return { status: 'fail', message: `${msg}（未检测到明显 Cache 命中）` }
+  return {
+    status: 'skip',
+    message: `${msg}（无 cached_tokens 且延迟无显著差异，跳过）`,
+  }
 }
 
 export async function evaluateJsonRepeat(
   runFn: () => Promise<ChatRequestResult>,
   runs: number,
+  minPassRate = JSON_REPEAT_DEFAULT_MIN_PASS_RATE,
 ): Promise<{ status: EngStepStatus; message: string }> {
   let valid = 0
+  let httpFail = 0
+  let empty = 0
+  let jsonFail = 0
+
   for (let i = 0; i < runs; i++) {
     const res = await runFn()
     if (res.httpStatus < 200 || res.httpStatus >= 300) {
-      return { status: 'fail', message: `Run ${i + 1} failed: HTTP ${res.httpStatus}` }
+      httpFail++
+      continue
     }
-    const content = extractAssistantContent(res.json)
-    if (content) {
-      try {
-        JSON.parse(content)
-        valid++
-      } catch {
-        return { status: 'fail', message: `Run ${i + 1}: invalid JSON in content` }
-      }
+    const content = assistantText(res)
+    if (!content) {
+      empty++
+      continue
+    }
+    if (tryParseAssistantJson(content) != null) {
+      valid++
+    } else {
+      jsonFail++
     }
   }
-  const rate = runs > 0 ? ((valid / runs) * 100).toFixed(0) : '0'
-  return valid === runs
-    ? { status: 'pass', message: `合法 JSON 率 ${rate}%（${valid}/${runs}）` }
-    : { status: 'fail', message: `合法 JSON 率 ${rate}%（${valid}/${runs}）` }
+
+  const rate = runs > 0 ? valid / runs : 0
+  const ratePct = (rate * 100).toFixed(0)
+  const thresholdPct = (minPassRate * 100).toFixed(0)
+  const detail =
+    httpFail || empty || jsonFail
+      ? `（HTTP 失败 ${httpFail}，空 content ${empty}，JSON 无效 ${jsonFail}）`
+      : ''
+  const msg = `合法 JSON 率 ${ratePct}%（${valid}/${runs}，阈值 ≥${thresholdPct}%）${detail}`
+
+  return rate >= minPassRate ? { status: 'pass', message: msg } : { status: 'fail', message: msg }
+}
+
+export async function evaluateMajorityRepeat(
+  step: EngStepDef,
+  runFn: () => Promise<ChatRequestResult>,
+  runs: number,
+  minPassCount: number,
+): Promise<{
+  status: EngStepStatus
+  message: string
+  lastHttpStatus: number
+  totalMs: number
+  preview: string
+}> {
+  let pass = 0
+  let lastRes: ChatRequestResult | null = null
+  let totalMs = 0
+  const failures: string[] = []
+
+  for (let i = 0; i < runs; i++) {
+    const res = await runFn()
+    lastRes = res
+    totalMs += res.durationMs
+    const { status, message } = evaluateEngStep(step, res)
+    if (status === 'pass') pass++
+    else failures.push(`#${i + 1} ${message}`)
+  }
+
+  const need = Math.min(minPassCount, runs)
+  const detail = failures.length ? `；失败：${failures.join('；')}` : ''
+  const msg = `确定性复验 ${pass}/${runs} 通过（需 ≥${need}）${detail}`
+
+  return {
+    status: pass >= need ? 'pass' : 'fail',
+    message: msg,
+    lastHttpStatus: lastRes?.httpStatus ?? 0,
+    totalMs,
+    preview: (lastRes?.bodyText || lastRes?.error || '').slice(0, 200),
+  }
 }

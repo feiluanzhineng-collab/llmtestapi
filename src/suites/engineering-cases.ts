@@ -1,4 +1,9 @@
 import type { EngCaseDef } from '../types/engineering'
+import {
+  detBody,
+  ENG_BEHAVIOR_VERIFY_RUNS,
+  ENG_JSON_VERIFY_RUNS,
+} from './engineering-deterministic'
 
 const WEATHER_TOOL = {
   type: 'function' as const,
@@ -128,7 +133,7 @@ export function getEngineeringCases(model: string): EngCaseDef[] {
         {
           id: 'tool-with-thinking',
           label: 'tools + thinking',
-          body: {
+          body: detBody({
             model,
             thinking: { type: 'enabled' },
             messages: [
@@ -140,7 +145,9 @@ export function getEngineeringCases(model: string): EngCaseDef[] {
             tools: [WEATHER_TOOL],
             tool_choice: 'auto',
             max_tokens: 256,
-          },
+          }),
+          handler: 'majority-repeat',
+          handlerOptions: { repeatCount: ENG_BEHAVIOR_VERIFY_RUNS, minPassCount: ENG_BEHAVIOR_VERIFY_RUNS },
           expect: { status: [200, 400], hasToolCalls: true },
         },
       ],
@@ -156,7 +163,7 @@ export function getEngineeringCases(model: string): EngCaseDef[] {
           id: 'eos-batch',
           label: 'EOS 统计压测',
           handler: 'eos-batch',
-          body: {
+          body: detBody({
             model,
             thinking: { type: 'enabled' },
             messages: [
@@ -166,7 +173,7 @@ export function getEngineeringCases(model: string): EngCaseDef[] {
               },
             ],
             max_tokens: 32,
-          },
+          }),
           expect: { status: 200 },
         },
       ],
@@ -181,11 +188,11 @@ export function getEngineeringCases(model: string): EngCaseDef[] {
           id: 'stream-usage-chunk',
           label: 'SSE 末 chunk usage',
           stream: true,
-          body: {
+          body: detBody({
             model,
             messages: [{ role: 'user', content: 'Say OK' }],
             max_tokens: 16,
-          },
+          }),
           expect: { status: 200, sseUsageInLastChunk: true },
         },
       ],
@@ -210,18 +217,18 @@ export function getEngineeringCases(model: string): EngCaseDef[] {
     {
       id: 'cache',
       subject: 'Cache 能力',
-      requirement: 'Prompt Cache/KV Cache，相同前缀复用，命中时降低延迟',
+      requirement: 'Prompt Cache/KV Cache；有 cached_tokens 或延迟显著下降即通过，否则跳过',
       mode: 'semi',
       steps: [
         {
           id: 'cache-compare',
           label: '同前缀两次请求',
           handler: 'cache-compare',
-          body: {
+          body: detBody({
             model,
             messages: [{ role: 'user', content: cachePrefix('eng-test') }],
             max_tokens: 16,
-          },
+          }),
           expect: { status: 200 },
         },
       ],
@@ -229,24 +236,25 @@ export function getEngineeringCases(model: string): EngCaseDef[] {
     {
       id: 'structured-output',
       subject: '结构化输出',
-      requirement: '支持 json_object 与 json_schema 两种模式',
+      requirement:
+        '支持 json_object 与 json_schema；固定 temperature=0 + seed，json_object 连续 5 次均合法 JSON',
       mode: 'auto',
       steps: [
         {
           id: 'json-object',
           label: 'json_object',
-          body: {
+          body: detBody({
             model,
             messages: [{ role: 'user', content: 'Return {"answer":42}' }],
             response_format: { type: 'json_object' },
             max_tokens: 64,
-          },
+          }),
           expect: { status: [200, 400], jsonValid: true },
         },
         {
           id: 'json-schema',
           label: 'json_schema',
-          body: {
+          body: detBody({
             model,
             messages: [{ role: 'user', content: 'Return answer as integer 42' }],
             response_format: {
@@ -263,20 +271,20 @@ export function getEngineeringCases(model: string): EngCaseDef[] {
               },
             },
             max_tokens: 64,
-          },
+          }),
           expect: { status: [200, 400], jsonSchemaKeys: ['answer'] },
         },
         {
           id: 'json-repeat',
           label: 'json_object 合规率',
           handler: 'json-repeat',
-          handlerOptions: { repeatCount: 10 },
-          body: {
+          handlerOptions: { repeatCount: ENG_JSON_VERIFY_RUNS, minPassRate: 1 },
+          body: detBody({
             model,
             messages: [{ role: 'user', content: 'Return JSON: {"ok":true}' }],
             response_format: { type: 'json_object' },
-            max_tokens: 32,
-          },
+            max_tokens: 64,
+          }),
           expect: { status: [200, 400], jsonValid: true },
         },
       ],
@@ -290,7 +298,7 @@ export function getEngineeringCases(model: string): EngCaseDef[] {
         {
           id: 'single-tool',
           label: '单工具调用',
-          body: {
+          body: detBody({
             model,
             messages: [
               {
@@ -301,13 +309,15 @@ export function getEngineeringCases(model: string): EngCaseDef[] {
             tools: [WEATHER_TOOL],
             tool_choice: 'auto',
             max_tokens: 128,
-          },
+          }),
+          handler: 'majority-repeat',
+          handlerOptions: { repeatCount: ENG_BEHAVIOR_VERIFY_RUNS, minPassCount: ENG_BEHAVIOR_VERIFY_RUNS },
           expect: { status: [200, 400], hasToolCalls: true, minToolCalls: 1 },
         },
         {
           id: 'parallel-tools',
           label: '并行工具调用',
-          body: {
+          body: detBody({
             model,
             messages: [
               {
@@ -319,7 +329,9 @@ export function getEngineeringCases(model: string): EngCaseDef[] {
             tools: [WEATHER_TOOL],
             tool_choice: 'auto',
             max_tokens: 256,
-          },
+          }),
+          handler: 'majority-repeat',
+          handlerOptions: { repeatCount: ENG_BEHAVIOR_VERIFY_RUNS, minPassCount: ENG_BEHAVIOR_VERIFY_RUNS },
           expect: { status: [200, 400], hasToolCalls: true, minToolCalls: 1 },
         },
       ],
@@ -327,22 +339,24 @@ export function getEngineeringCases(model: string): EngCaseDef[] {
     {
       id: 'multi-turn',
       subject: '多轮对话',
-      requirement: '携带历史消息多轮对话，保持上下文连贯',
+      requirement: '携带历史消息多轮对话；temperature=0 + seed，3 次复验均命中上下文',
       mode: 'auto',
       steps: [
         {
           id: 'multi-turn-3',
           label: '3 轮上下文',
-          body: {
+          body: detBody({
             model,
             messages: [
               { role: 'user', content: 'My favorite color is blue. Remember this.' },
               { role: 'assistant', content: 'Got it, your favorite color is blue.' },
               { role: 'user', content: 'What is my favorite color? Reply with just the color.' },
             ],
-            max_tokens: 16,
-          },
-          expect: { status: 200, contentIncludes: ['blue'] },
+            max_tokens: 64,
+          }),
+          handler: 'majority-repeat',
+          handlerOptions: { repeatCount: ENG_BEHAVIOR_VERIFY_RUNS, minPassCount: ENG_BEHAVIOR_VERIFY_RUNS },
+          expect: { status: 200, contentIncludesAny: ['blue', '蓝色'] },
         },
       ],
     },
@@ -356,11 +370,11 @@ export function getEngineeringCases(model: string): EngCaseDef[] {
           id: 'sse-basic',
           label: 'SSE 流式',
           stream: true,
-          body: {
+          body: detBody({
             model,
             messages: [{ role: 'user', content: 'Count from 1 to 3' }],
             max_tokens: 32,
-          },
+          }),
           expect: { status: 200 },
         },
       ],

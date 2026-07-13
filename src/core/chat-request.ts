@@ -1,4 +1,6 @@
 import { resolveBaseUrl, type AppConfig } from '../types/config'
+import { formatProxyError } from './base-url'
+import { proxyRequestHeaders } from './proxy-headers'
 import { extractAssistantText } from './extract-assistant-text'
 import { parseChunkJson, parseSseStream } from './sse-parser'
 
@@ -95,7 +97,10 @@ export async function chatRequest(options: ChatRequestOptions): Promise<ChatRequ
   try {
     const response = await fetch(url, {
       method: 'POST',
-      headers,
+      headers: {
+        ...headers,
+        ...proxyRequestHeaders(config),
+      },
       body: JSON.stringify(
         stream ? { stream: true, stream_options: { include_usage: true }, ...body } : body,
       ),
@@ -110,6 +115,7 @@ export async function chatRequest(options: ChatRequestOptions): Promise<ChatRequ
       } catch {
         json = null
       }
+      const httpOk = response.status >= 200 && response.status < 300
       return {
         httpStatus: response.status,
         bodyText,
@@ -117,7 +123,21 @@ export async function chatRequest(options: ChatRequestOptions): Promise<ChatRequ
         durationMs: performance.now() - started,
         sseLastChunkUsage: false,
         sseValid: false,
+        error: httpOk ? undefined : formatProxyError(response.status, bodyText),
         ...extractResponseMeta(json),
+      }
+    }
+
+    if (!response.ok) {
+      const bodyText = await response.text().catch(() => '')
+      return {
+        httpStatus: response.status,
+        bodyText,
+        json: null,
+        durationMs: performance.now() - started,
+        sseLastChunkUsage: false,
+        sseValid: false,
+        error: formatProxyError(response.status, bodyText),
       }
     }
 

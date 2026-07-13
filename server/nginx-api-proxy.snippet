@@ -1,0 +1,13 @@
+# Add inside the HTTPS server block of llmtest.feiluanai.com.conf
+# Browser calls same-origin /api/v1/... ; nginx forwards to dynamic relay on :8787
+
+location /api/ {
+    proxy_pass http://127.0.0.1:8787/;
+    proxy_http_version 1.1;
+    proxy_set_header Connection "";
+    proxy_buffering off;
+    proxy_cache off;
+    proxy_read_timeout 600s;
+    proxy_send_timeout 600s;
+    client_max_body_size 32m;
+}

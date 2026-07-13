@@ -37,7 +37,7 @@ export function EngineeringPage() {
   const { t } = useTranslation()
   const config = useConfigStore((s) => s.config)
   const [includeOptional, setIncludeOptional] = useState(false)
-  const [eosRuns, setEosRuns] = useState(10)
+  const [eosRuns, setEosRuns] = useState(100)
   const [running, setRunning] = useState(false)
   const [liveCases, setLiveCases] = useState<EngCaseResult[]>([])
   const [report, setReport] = useState<EngRunReport | null>(null)

@@ -8,6 +8,7 @@ import {
 } from './accuracy-grade'
 import { extractAssistantTextFromResponse } from './extract-assistant-text'
 import { getBenchmarkMeta } from '../data/benchmark-meta'
+import { randomUUID } from './random-id'
 import type { AppConfig } from '../types/config'
 import type {
   AccuracyQuestionResult,
@@ -213,7 +214,7 @@ export async function runAccuracyBenchmark(
         : null
 
   return {
-    id: crypto.randomUUID(),
+    id: randomUUID(),
     benchmarkId,
     startedAt,
     finishedAt: new Date().toISOString(),

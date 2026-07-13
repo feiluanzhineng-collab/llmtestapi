@@ -4,8 +4,10 @@ import {
   evaluateEngStep,
   evaluateEosBatch,
   evaluateJsonRepeat,
+  evaluateMajorityRepeat,
 } from './engineering-eval'
 import { getEngineeringCases } from '../suites/engineering-cases'
+import { randomUUID } from './random-id'
 import type { AppConfig } from '../types/config'
 import type {
   EngCaseDef,
@@ -178,11 +180,53 @@ async function runJsonRepeat(
     responsePreview: '',
   }
 
+  const minPassRate = step.handlerOptions?.minPassRate
   const { status, message } = await evaluateJsonRepeat(
     () => chatRequest({ config, body: step.body, signal }),
     runs,
+    minPassRate,
   )
   return { ...base, status, httpStatus: 200, message }
+}
+
+async function runMajorityRepeat(
+  config: AppConfig,
+  step: EngStepDef,
+  signal?: AbortSignal,
+): Promise<EngStepResult> {
+  const base: EngStepResult = {
+    stepId: step.id,
+    label: step.label,
+    status: 'running',
+    httpStatus: 0,
+    durationMs: 0,
+    message: '',
+    responsePreview: '',
+  }
+
+  const runs = step.handlerOptions?.repeatCount ?? 3
+  const minPassCount = step.handlerOptions?.minPassCount ?? runs
+  const { status, message, lastHttpStatus, totalMs, preview } = await evaluateMajorityRepeat(
+    step,
+    () =>
+      chatRequest({
+        config,
+        body: step.body,
+        stream: step.stream,
+        auth: step.auth,
+        signal,
+      }),
+    runs,
+    minPassCount,
+  )
+  return {
+    ...base,
+    status,
+    httpStatus: lastHttpStatus,
+    durationMs: Math.round(totalMs),
+    message,
+    responsePreview: preview,
+  }
 }
 
 async function runStep(
@@ -214,6 +258,9 @@ async function runStep(
   }
   if (step.handler === 'json-repeat') {
     return runJsonRepeat(config, step, step.handlerOptions?.repeatCount ?? 10, signal)
+  }
+  if (step.handler === 'majority-repeat') {
+    return runMajorityRepeat(config, step, signal)
   }
 
   const res = await chatRequest({
@@ -324,7 +371,7 @@ export async function runEngineeringSuite(options: EngRunOptions): Promise<EngRu
   }
 
   const report: EngRunReport = {
-    id: crypto.randomUUID(),
+    id: randomUUID(),
     startedAt,
     finishedAt: new Date().toISOString(),
     model,

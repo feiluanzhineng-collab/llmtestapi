@@ -4,6 +4,7 @@ import { estimateTokens, checkTtftSlaP90, summarizeNullable, avg, percentile } f
 import { buildPromptForTargetTokens } from './prompt-builder'
 import { calcRequestsPerTierPerRound, calcTotalRequests } from './ttft-plan'
 import { RateLimiter } from './rate-limiter'
+import { randomUUID } from './random-id'
 import type { AppConfig } from '../types/config'
 import type {
   TtftConcurrencyResult,
@@ -193,7 +194,7 @@ export async function runTtftSuite(options: TtftRunOptions): Promise<TtftRunRepo
         requestIndex++
 
         const entry: TtftRequestLogEntry = {
-          id: crypto.randomUUID(),
+          id: randomUUID(),
           index: requestIndex,
           tierId: tier.id,
           tierLabel: tier.labelKey,
@@ -257,7 +258,7 @@ export async function runTtftSuite(options: TtftRunOptions): Promise<TtftRunRepo
   }
 
   const report: TtftRunReport = {
-    id: crypto.randomUUID(),
+    id: randomUUID(),
     startedAt,
     finishedAt: new Date().toISOString(),
     model: config.model,

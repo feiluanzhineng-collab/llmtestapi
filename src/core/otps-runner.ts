@@ -3,6 +3,7 @@ import { avg, percentile } from './metrics'
 import { OTPS_PROMPT } from './otps-plan'
 import { slaTiersForModelSize } from './otps-sla'
 import { RateLimiter } from './rate-limiter'
+import { randomUUID } from './random-id'
 import type { AppConfig } from '../types/config'
 import type {
   OtpsLevelResult,
@@ -122,7 +123,7 @@ async function runConcurrentLevel(
       const seqInLevel = completed
 
       const entry: OtpsRequestLogEntry = {
-        id: crypto.randomUUID(),
+        id: randomUUID(),
         index: requestIndex,
         concurrency,
         seqInLevel,
@@ -233,7 +234,7 @@ export async function runOtpsSuite(options: OtpsRunOptions): Promise<OtpsRunRepo
   const slaResults = buildSlaResults(plan, levelResults)
 
   const report: OtpsRunReport = {
-    id: crypto.randomUUID(),
+    id: randomUUID(),
     startedAt,
     finishedAt: new Date().toISOString(),
     model: config.model,

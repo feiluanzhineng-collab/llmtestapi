@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { validateBaseUrlForProxy } from '../../core/base-url'
 import { testConnection } from '../../core/api-client'
+import { isHostedDeploy } from '../../core/proxy-headers'
 import { useConfigStore } from '../../stores/config-store'
 
 export function ConfigPanel() {
@@ -10,6 +12,9 @@ export function ConfigPanel() {
   const [saved, setSaved] = useState(false)
   const [testing, setTesting] = useState(false)
   const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null)
+
+  const baseUrlIssues = draft.useProxy ? validateBaseUrlForProxy(draft.baseUrl) : []
+  const baseUrlErrors = baseUrlIssues.filter((i) => i.level === 'error')
 
   function update<K extends keyof typeof draft>(key: K, value: (typeof draft)[K]) {
     setDraft((d) => ({ ...d, [key]: value }))
@@ -45,6 +50,15 @@ export function ConfigPanel() {
             className="w-full rounded-lg border border-surface-border bg-white px-3 py-2 text-slate-900 shadow-sm outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
           />
           <span className="mt-1 block text-xs text-slate-500">{t('config.baseUrlHint')}</span>
+          {draft.useProxy &&
+            baseUrlIssues.map((issue) => (
+              <span
+                key={issue.message}
+                className={`mt-1 block text-xs ${issue.level === 'error' ? 'text-rose-600' : 'text-amber-700'}`}
+              >
+                {issue.message}
+              </span>
+            ))}
         </label>
 
         <label className="block md:col-span-2">
@@ -86,6 +100,12 @@ export function ConfigPanel() {
         </label>
       </div>
 
+      {!draft.useProxy && (
+        <p className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+          {isHostedDeploy() ? t('config.corsHostedWarning') : t('config.corsDevWarning')}
+        </p>
+      )}
+
       <div className="mt-4 flex flex-wrap items-center gap-3">
         <button
           type="button"
@@ -97,7 +117,7 @@ export function ConfigPanel() {
         <button
           type="button"
           onClick={() => void handleTest()}
-          disabled={testing}
+          disabled={testing || baseUrlErrors.length > 0}
           className="rounded-lg border border-surface-border bg-white px-4 py-2 text-sm text-slate-700 shadow-sm hover:bg-slate-50"
         >
           {testing ? t('config.testing') : t('config.testConnection')}

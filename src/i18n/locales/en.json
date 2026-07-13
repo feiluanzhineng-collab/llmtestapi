@@ -10,18 +10,22 @@
     "performance": "Performance (TTFT)",
     "otps": "OTPS",
     "accuracy": "Accuracy",
+    "about": "About",
+    "github": "GitHub",
     "comingSoon": "Coming soon"
   },
   "config": {
     "title": "API Configuration",
     "baseUrl": "Base URL",
-    "baseUrlHint": "e.g. https://api.example.com/v1 or /api/v1 (dev proxy)",
+    "baseUrlHint": "Full gateway URL, e.g. https://your-relay.com/v1",
     "apiKey": "API Key",
-    "apiKeyHint": "Stored locally in your browser only",
+    "apiKeyHint": "Stored locally in your browser only; not persisted on our server when using the relay",
     "model": "Model",
     "modelHint": "Model ID for chat/completions",
-    "useProxy": "Use dev proxy path",
-    "useProxyHint": "Prefix requests with /api to avoid CORS in development",
+    "useProxy": "Same-origin relay (recommended)",
+    "useProxyHint": "Routes via /api on this site; the server forwards to your Base URL above — any HTTPS relay, no CORS",
+    "corsHostedWarning": "Without the relay, the browser blocks cross-origin requests (CORS). Keep the relay enabled when testing third-party gateways.",
+    "corsDevWarning": "Without the relay, the browser may block cross-origin requests. Enable the relay in dev, or ensure the target API allows your origin.",
     "save": "Save configuration",
     "saved": "Configuration saved",
     "testConnection": "Test connection",
@@ -85,7 +89,7 @@
     "settings": "Test settings",
     "includeOptional": "Include optional items (interleaved thinking, rate-limit burst, etc.)",
     "eosRuns": "EOS sample count",
-    "eosRunsHint": "(doc standard: 1000, default: 10; uses value above)",
+    "eosRunsHint": "(doc standard: 1000, default: 100; uses value above)",
     "caseCount": "{{count}} acceptance items will run",
     "runAll": "Run engineering acceptance",
     "results": "Results",
@@ -326,6 +330,27 @@
         "desc": "τ³-Bench — customer-service sims (airline/retail/telecom) with tools.",
         "why": "Official ~70.6%. Needs tau2-bench simulator, not a flat question file."
       }
+    }
+  },
+  "about": {
+    "title": "About",
+    "projectTitle": "Open source",
+    "projectBody": "LLM API Test is an open-source, browser-only acceptance bench from Feiluan. Verify compatibility, engineering behavior, latency, throughput, and benchmark accuracy — no Python harness or Docker required.",
+    "viewOnGitHub": "View source on GitHub →",
+    "companyTitle": "About Feiluan",
+    "companyIntro": "Hangzhou Feiluan Digital Technology Co., Ltd. builds B2B AI infrastructure. We operate an enterprise LLM gateway — point your app at our Base URL to access frontier models with high TPM/RPM capacity and stable SLAs.",
+    "highlightTpm": "Massive TPM / RPM — 100M+ TPM negotiable; direct datacenter capacity for DeepSeek, GLM, Kimi, Seedance, and more",
+    "highlightSla": "Enterprise SLAs with written latency and uptime commitments",
+    "highlightCompat": "OpenAI-compatible APIs — most SDKs only need a URL change",
+    "highlightB2b": "B2B onboarding: capacity planning, billing, and dedicated support",
+    "contactTitle": "Contact & products",
+    "phone": "Phone",
+    "email": "Email",
+    "contactHint": "For B2B access, capacity planning, or SLA — call or email us directly.",
+    "products": {
+      "gatewayCn": "API gateway (China)",
+      "gatewayIntl": "API gateway (international)",
+      "image": "Image generation"
     }
   }
 }
